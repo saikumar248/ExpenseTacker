@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 
 interface Transaction {
-  ID: string; // Changed to string to match SheetDB's format
+  ID: string; 
   Amount: number;
   Created_At: string;
+  Description: string;
 }
 
 const API_URL = 'https://sheetdb.io/api/v1/4yjx2jiifblx4';
 
-const PhonePeTransactions = () => {
+const CreditCardTransactions = () => {
   const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,7 +28,6 @@ const PhonePeTransactions = () => {
       if (!response.ok) throw new Error('Failed to fetch transactions');
       
       const data = await response.json();
-      console.log(data)
       setTransactions(data);
       calculateTotal(data);
       setError(null);
@@ -39,12 +40,7 @@ const PhonePeTransactions = () => {
   };
 
   const generateID = () => {
-    // Generate a unique string ID using timestamp and random number
-  
-    const id= `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    console.log("id",id)
-    return id;
-
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
   const addTransaction = async (newTransaction: Transaction) => {
@@ -56,9 +52,10 @@ const PhonePeTransactions = () => {
         },
         body: JSON.stringify({
           data: [{
-            ID: newTransaction.ID,  // Make sure to use lowercase 'id' for SheetDB
+            ID: newTransaction.ID,
             Amount: newTransaction.Amount,
-            Created_At: newTransaction.Created_At
+            Created_At: newTransaction.Created_At,
+            Description: newTransaction.Description
           }]
         }),
       });
@@ -72,6 +69,7 @@ const PhonePeTransactions = () => {
       setError('Failed to add transaction. Please try again.');
     }
   };
+
   function generateDate() {
     const options: Intl.DateTimeFormatOptions = { 
       year: 'numeric', 
@@ -88,19 +86,25 @@ const PhonePeTransactions = () => {
       return;
     }
 
+    if (!description.trim()) {
+      setError('Please enter a description');
+      return;
+    }
+
     const newTransaction = {
-      ID: generateID(),  // Changed from ID to id
+      ID: generateID(),
       Amount: Number(amount),
-      Created_At:  generateDate()
+      Created_At: generateDate(),
+      Description: description.trim()
     };
 
     await addTransaction(newTransaction);
     setAmount('');
+    setDescription('');
   };
 
   const handleDelete = async (id: string) => {
     try {
-      // Using the correct SheetDB delete endpoint format
       const response = await fetch(`${API_URL}/ID/${id}`, {
         method: 'DELETE',
         headers: {
@@ -122,7 +126,6 @@ const PhonePeTransactions = () => {
     const sum = transactions.reduce((acc, curr) => acc + Number(curr.Amount), 0);
     setTotal(sum);
   };
-  
 
   if (isLoading) {
     return (
@@ -142,38 +145,58 @@ const PhonePeTransactions = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="mb-6">
-        <div className="flex gap-4">
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Enter amount"
-            className="flex-1 rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:ring focus:ring-blue-200"
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Add
-          </button>
+      <form onSubmit={handleSubmit} className="mb-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
+              Amount (₹)
+            </label>
+            <input
+              id="amount"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Enter amount"
+              className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:ring focus:ring-blue-200"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+              Description
+            </label>
+            <input
+              id="description"
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter description"
+              className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:ring focus:ring-blue-200"
+            />
+          </div>
         </div>
+        <button
+          type="submit"
+          className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Add Transaction
+        </button>
       </form>
 
       <div className="space-y-4">
         {transactions.map((transaction) => (
           <div
             key={transaction.ID}
-            className="flex justify-between items-center border-b pb-2"
+            className="flex flex-col md:flex-row md:justify-between items-start md:items-center p-4 border rounded-lg hover:bg-gray-50"
           >
-            <span className="text-lg">₹{transaction.Amount.toLocaleString()}</span>
-            <div className="flex items-center gap-4">
-              <span className="text-gray-500">
-                {transaction.Created_At}
-              </span>
+            <div className="flex flex-col space-y-1">
+              <span className="text-lg font-semibold">₹{transaction.Amount.toLocaleString()}</span>
+              <span className="text-gray-600">{transaction.Description}</span>
+            </div>
+            <div className="flex items-center gap-4 mt-2 md:mt-0">
+              <span className="text-gray-500">{transaction.Created_At}</span>
               <button
                 onClick={() => handleDelete(transaction.ID)}
-                className="text-red-500 hover:text-red-700 p-1"
+                className="text-red-500 hover:text-red-700 p-1 transition-colors"
                 title="Delete transaction"
               >
                 <Trash2 className="w-5 h-5" />
@@ -190,4 +213,4 @@ const PhonePeTransactions = () => {
   );
 };
 
-export default PhonePeTransactions;
+export default CreditCardTransactions;
