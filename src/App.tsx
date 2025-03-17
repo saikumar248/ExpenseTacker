@@ -7,6 +7,11 @@ import CreditCardTransactions from './components/CreditCardTransactions';
 function App() {
   return (
     <Router>
+      <center>  <strong>  <h1 className="bg-gray-100">
+        Ajay's Expense Tracker
+      </h1></strong> </center>
+
+
       <div className="min-h-screen bg-gray-100">
         <nav className="bg-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4">
